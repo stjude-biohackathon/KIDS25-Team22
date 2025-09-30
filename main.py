@@ -20,6 +20,7 @@ from agents import (
     VariantGetterClinVarAgent,
     ArticleGetterBioMCPAgent,
     AlphaGenomeBioMCPAgent,
+    AlphaGenomeAgent,
     Evo2Agent,
     GPNAgent,
     RankingAgent,
@@ -75,7 +76,9 @@ def main(file_path=None, phenotype=None):
     variant_getter_biomcp_agent = VariantGetterBioMCPAgent(verbose=True)
     variant_getter_clinvar_agent = VariantGetterClinVarAgent(verbose=True)
     article_getter_agent = ArticleGetterBioMCPAgent(verbose=True)
-    alpha_genome_agent = AlphaGenomeBioMCPAgent(verbose=True)
+    alpha_genome_biomcp_agent = AlphaGenomeBioMCPAgent(verbose=True)
+    alpha_genome_agent = AlphaGenomeAgent(verbose=True)
+
     evo2_agent = Evo2Agent(verbose=True)
     gpn_agent = GPNAgent(verbose=True)
     ranking_agent = RankingAgent(verbose=True)
@@ -90,6 +93,7 @@ def main(file_path=None, phenotype=None):
         variant_getter_biomcp_agent=variant_getter_biomcp_agent,
         variant_getter_clinvar_agent=variant_getter_clinvar_agent,
         article_getter_agent=article_getter_agent,
+        alpha_genome_biomcp_agent=alpha_genome_biomcp_agent,
         alpha_genome_agent=alpha_genome_agent,
         evo2_agent=evo2_agent,
         gpn_agent=gpn_agent,

@@ -13,6 +13,17 @@ import json
 from bs4 import BeautifulSoup
 from pdb import set_trace
 
+
+from dotenv import load_dotenv
+
+from alphagenome.data import genome
+from alphagenome.models import dna_client
+from alphagenome.models import variant_scorers
+
+load_dotenv()
+alpha_api_key = os.getenv("ALPHAGENOME_API_KEY")
+
+
 # add persistent context memory
 
 # Principal Investigator agent
@@ -24,6 +35,7 @@ class OrchestratorAgent:
         variant_getter_biomcp_agent=None,
         variant_getter_clinvar_agent =None,
         article_getter_agent=None,
+        alpha_genome_biomcp_agent=None,
         alpha_genome_agent=None,
         evo2_agent=None,
         gpn_agent=None,
@@ -64,7 +76,8 @@ class OrchestratorAgent:
             return result
         set_trace()
         result = {
-            "VariantGetterBioMCPAgent": self.variant_getter_agent.search_variants(coordinates, phenotype)
+            "VariantGetterBioMCPAgent": self.variant_getter_agent.search_variants(coordinates, phenotype),
+            "AlphaGenomeAgent": self.alpha_genome_agent.predict_variants_effects(coordinates)
         }
         set_trace()
         self.last_variant_results = result
@@ -124,7 +137,7 @@ class VariantGetterBioMCPAgent:
         """Search for variant details using genomic coordinates."""
         
         variant_data_list = []
-        for record in coordinates[:2]:  # Limit to first 10 for testing
+        for record in coordinates[:10]:  # Limit to first 10 for testing
             variant_data = {}
             chrom = record["chrom"]
             pos = record["pos"]
@@ -222,8 +235,9 @@ class VariantGetterBioMCPAgent:
             # Save as pickl for Franz (his agent accepts a lit of dicts as input)
             
             variant_data_list.append(variant_data)
-            # set_trace()
-
+        #set_trace()    
+        #with open('my_object.pkl', 'wb') as file:
+        #    pickle.dump(variant_data_list, file)
         return variant_data_list
       
 # Gets output from biomcp variant get to fetch clinvar ids and obtains clinvar data from ncbi    
@@ -467,6 +481,70 @@ class AlphaGenomeBioMCPAgent:
         return None
 
 
+class AlphaGenomeAgent:
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+        alpha_api_key = os.getenv("ALPHAGENOME_API_KEY")
+        self.alphaGenomeModel = dna_client.create(alpha_api_key)
+
+    def predict_variants_effects(
+            self, coordinates, phenotype=None,
+    ):
+        """Search for variant details using genomic coordinates."""
+        variant_data = {}
+
+        for record in coordinates[:1]:  # Limit to first 10 for testing
+            chrom = record["chrom"]
+            pos = record["pos"]
+            ref = record["ref"]
+            alt = record["alt"]
+            variant_id = chrom + ':' + str(pos) + ":" + ref + '>' + alt
+            
+            variant = genome.Variant(
+                chromosome='chr11',
+                position=32392032,
+                reference_bases='G',  # Can differ from the true reference genome base.
+                alternate_bases='A',
+            )
+
+            interval = variant.reference_interval.resize(dna_client.SEQUENCE_LENGTH_16KB)
+
+            try:
+                if self.verbose:
+                    print(f"Searching variant effects for {variant_id} using AlphaGenome")
+
+                variant_output = self.alphaGenomeModel.predict_variant(
+                    interval=interval,
+                    variant=variant,
+                    requested_outputs={dna_client.OutputType.RNA_SEQ, dna_client.OutputType.SPLICE_SITES},
+                    ontology_terms=['UBERON:0001157'],
+                )
+
+                variant_scorer = variant_scorers.RECOMMENDED_VARIANT_SCORERS['RNA_SEQ']
+                variant_scores = self.alphaGenomeModel.score_variant(
+                    interval=interval, variant=variant, variant_scorers=[variant_scorer]
+                )[0]
+
+                cols = [
+                    'variant_id', 'scored_interval', 'gene_name', 'gene_type', 'ontology_curie', 
+                    'biosample_name', 'biosample_type', 'gtex_tissue', 'raw_score', 'quantile_score'
+                ] 
+                varScoresOutput = variant_scorers.tidy_scores([variant_scores], match_gene_strand=True)
+                #print(varScoresOutput[cols])
+                variant_data = varScoresOutput.iloc[0].to_dict()
+            except Exception as exc:
+                variant_data = {
+                        "coordinate": variant_id,
+                        "Agent" : "AlphaGenomeAgent",
+                        "error": str(exc),
+                    }
+            
+            print(variant_data)
+            return variant_data
+            
+
+
+
 class Evo2Agent:
     def __init__(self, verbose=False):
         self.verbose = verbose
@@ -523,7 +601,7 @@ class VariantAggregationAgent:
             aggregated["VariantGetterBioMCPAgent"] = variant_getter.search_variants(coordinates, phenotype)
 
         if alpha_genome_agent is not None and hasattr(alpha_genome_agent, "analyze"):
-            aggregated["AlphaGenomeBioMCPAgent"] = alpha_genome_agent.analyze(
+            aggregated["AlphaGenomeAgent"] = alpha_genome_agent.analyze(
                 coordinates=coordinates,
                 phenotype=phenotype,
             )
