@@ -37,7 +37,7 @@ parser = argparse.ArgumentParser(description="Carry out variant prioritization f
 parser.add_argument(
     "--vcf_file",
     type=str,
-    default="/Users/tnandi/Downloads/stjudes_hackathon/pediatric_cancer_variants.vcf",
+    default="./clinvar.hg19.chr17.top500.vcf",
     help="Path to the VCF containing variants to analyze.",
 )
 parser.add_argument(

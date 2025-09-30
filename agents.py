@@ -62,10 +62,11 @@ class OrchestratorAgent:
             )
             self.last_variant_results = result
             return result
-
+        set_trace()
         result = {
             "VariantGetterBioMCPAgent": self.variant_getter_agent.search_variants(coordinates, phenotype)
         }
+        set_trace()
         self.last_variant_results = result
         return result
 
@@ -121,14 +122,15 @@ class VariantGetterBioMCPAgent:
 
     def search_variants(self, coordinates, phenotype):
         """Search for variant details using genomic coordinates."""
-        variant_data = {}
-
-        for record in coordinates[:1]:  # Limit to first 10 for testing
+        
+        variant_data_list = []
+        for record in coordinates[:2]:  # Limit to first 10 for testing
+            variant_data = {}
             chrom = record["chrom"]
             pos = record["pos"]
             ref = record["ref"]
             alt = record["alt"]
-            var_id = chrom + ':g.' + str(pos) + ref + '>' + alt
+            var_id = 'chr' + chrom + ':g.' + str(pos) + ref + '>' + alt
             # var_id = 'chr11:g.32392032G>A'
             # var_id = 'chr11:g.32413578G>A'
             print(f"var_id: {var_id}")
@@ -152,7 +154,7 @@ class VariantGetterBioMCPAgent:
                 )
 
                 # set_trace()
-
+                print("Completed biomcp variant get call")
                 if result.returncode == 0:
                     formatted_output = utils.format_biomcp_variant_output(result.stdout)
                     # if self.verbose:
@@ -187,22 +189,16 @@ class VariantGetterBioMCPAgent:
             variant_id_match = re.search(r'"variant_id":\s*(\d+)', result.stdout)
             variant_id = variant_id_match.group(1) if variant_id_match else None
             # set_trace()
-            variant_id = int(variant_id)
-            # if variant_id:
-            #     variant_data[-1]["variant_id"] = variant_id
-
-
-            # set_trace()
             if variant_id is None:
                 return {"error": "No ClinVar ID found in BioMCP output."}
             else:
+                print("Fetching clinVar data")
+                variant_id = int(variant_id)
                 clinvar_agent = VariantGetterClinVarAgent(verbose=self.verbose)
                 clinvar_results = clinvar_agent.fetch_clinvar_data(variant_id)
 
             variant_data.update({"clinvar_data": clinvar_results})
             # set_trace()
-            # if clinvar_results:
-            #     variant_data[-1]["clinvar_data"] = clinvar_results[0]
 
             # Extract genename from variant_data['output'] string (e.g., WT1 from "genename": "WT1")
             gene_match = re.search(r'"genename":\s*"([^"]+)"', variant_data['output'])
@@ -210,6 +206,7 @@ class VariantGetterBioMCPAgent:
             # variant_data.update({"gene_name": gene_name})
 
             # Create an instance of the ArticleGetterBioMCPAgent; pass the gene name and phenotype for it to retrieve articles and return in json format for ArticleProcessorAgent to process
+            print("fetching articles using ArticleGetterBioMCPAgent.fetch_articles()")
             article_getter = ArticleGetterBioMCPAgent(verbose=self.verbose)
             articles = article_getter.fetch_articles(gene=gene_name, phenotype=phenotype)
 
@@ -220,7 +217,14 @@ class VariantGetterBioMCPAgent:
             # Process articles using the process function in the ArticleProcessorAgent class
             article_summaries = article_processor.process(articles=articles, gene=gene_name, phenotype=phenotype)
 
-        return variant_data
+            # Collect article summary for all variants 
+            variant_data.update({"lit_article_summary": article_summaries})
+            # Save as pickl for Franz (his agent accepts a lit of dicts as input)
+            
+            variant_data_list.append(variant_data)
+            # set_trace()
+
+        return variant_data_list
       
 # Gets output from biomcp variant get to fetch clinvar ids and obtains clinvar data from ncbi    
 class VariantGetterClinVarAgent:
@@ -365,9 +369,9 @@ class ArticleProcessorAgent:
         article_dict = []
         for lit_article in lit_articles[:30]:
             title = lit_article.get("title", "No title")
-            print(f"Title: {title}")
+            # print(f"Title: {title}")
             abstract = lit_article.get("abstract")
-            print(f"Abstract: {abstract}")
+            # print(f"Abstract: {abstract}")
             # if abstract == "" or abstract is None:
             #     abstract = "No abstract"
             # else:
@@ -388,7 +392,8 @@ class ArticleProcessorAgent:
         # print(f"Article dict: {article_dict}")
         # Pass the article_dict to the LLM to get a summary for all articles to be output in json format with title and summary as keys and values
         #summary_prompt = f"Summarize the articles in {article_dict} in 2-3 sentences focusing on its relevance to the gene and phenotype provided. You need have to access the full text of the article if abstract is not available. Return summary for all articles in json format with title and summary as keys and values"
-        
+        # set_trace()
+
         summary_prompt = (
             f"Summarize the articles in {article_dict} focusing on their relevance to the {gene} and {phenotype} provided. "
             "You need have to access the full text of the article if abstract is not available. "
@@ -397,10 +402,10 @@ class ArticleProcessorAgent:
         )
         print(f"Querying LLM with given prompt")
         summary = query_llm(summary_prompt, model=LLM_CONFIG["default_model"], temperature=0.3)
-        set_trace()
+        # set_trace()
             
         
-        return summaries
+        return summary
         
 
 
