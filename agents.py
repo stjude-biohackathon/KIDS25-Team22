@@ -1,12 +1,12 @@
 from llm_utils import query_llm
-import prompts
+#import prompts
 import os
 import subprocess
 import utils
 from config import LLM_CONFIG
 import re
 import requests
-from duckduckgo_search import DDGS
+#from duckduckgo_search import DDGS
 import xml.etree.ElementTree as ET
 import argparse
 import json
@@ -137,7 +137,7 @@ class VariantGetterBioMCPAgent:
         """Search for variant details using genomic coordinates."""
         
         variant_data_list = []
-        for record in coordinates[:10]:  # Limit to first 10 for testing
+        for record in coordinates[:1]:  # Limit to first 10 for testing
             variant_data = {}
             chrom = record["chrom"]
             pos = record["pos"]
@@ -600,8 +600,8 @@ class VariantAggregationAgent:
         if variant_getter is not None:
             aggregated["VariantGetterBioMCPAgent"] = variant_getter.search_variants(coordinates, phenotype)
 
-        if alpha_genome_agent is not None and hasattr(alpha_genome_agent, "analyze"):
-            aggregated["AlphaGenomeAgent"] = alpha_genome_agent.analyze(
+        if alpha_genome_agent is not None and hasattr(alpha_genome_agent, "predict_variants_effects"):
+            aggregated["AlphaGenomeAgent"] = alpha_genome_agent.predict_variants_effects(
                 coordinates=coordinates,
                 phenotype=phenotype,
             )
