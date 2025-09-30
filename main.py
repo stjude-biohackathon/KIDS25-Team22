@@ -98,6 +98,7 @@ def main(file_path=None, phenotype=None):
         variant_aggregation_agent=variant_aggregation_agent,
         # files_dir_content=files_dir_content,
         # mode=args.mode,
+        # phenotype=phenotype_term,
         conda_env=args.conda_env,
     )
     

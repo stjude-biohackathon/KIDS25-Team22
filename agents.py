@@ -64,7 +64,7 @@ class OrchestratorAgent:
             return result
 
         result = {
-            "VariantGetterBioMCPAgent": self.variant_getter_agent.search_variants(coordinates)
+            "VariantGetterBioMCPAgent": self.variant_getter_agent.search_variants(coordinates, phenotype)
         }
         self.last_variant_results = result
         return result
@@ -119,7 +119,7 @@ class VariantGetterBioMCPAgent:
         self.verbose = verbose
         self.assembly = assembly
 
-    def search_variants(self, coordinates):
+    def search_variants(self, coordinates, phenotype):
         """Search for variant details using genomic coordinates."""
         variant_data = {}
 
@@ -130,7 +130,7 @@ class VariantGetterBioMCPAgent:
             alt = record["alt"]
             var_id = chrom + ':g.' + str(pos) + ref + '>' + alt
             # var_id = 'chr11:g.32392032G>A'
-            var_id = 'chr11:g.32413578G>A'
+            # var_id = 'chr11:g.32413578G>A'
             print(f"var_id: {var_id}")
             command = [
                 "biomcp",
@@ -155,8 +155,8 @@ class VariantGetterBioMCPAgent:
 
                 if result.returncode == 0:
                     formatted_output = utils.format_biomcp_variant_output(result.stdout)
-                    if self.verbose:
-                        print(formatted_output)
+                    # if self.verbose:
+                    #     print(formatted_output)
                     variant_data = {
                             "coordinate": record,
                             "output": result.stdout.strip(),
@@ -203,6 +203,22 @@ class VariantGetterBioMCPAgent:
             # set_trace()
             # if clinvar_results:
             #     variant_data[-1]["clinvar_data"] = clinvar_results[0]
+
+            # Extract genename from variant_data['output'] string (e.g., WT1 from "genename": "WT1")
+            gene_match = re.search(r'"genename":\s*"([^"]+)"', variant_data['output'])
+            gene_name = gene_match.group(1) if gene_match else "Unknown"
+            # variant_data.update({"gene_name": gene_name})
+
+            # Create an instance of the ArticleGetterBioMCPAgent; pass the gene name and phenotype for it to retrieve articles and return in json format for ArticleProcessorAgent to process
+            article_getter = ArticleGetterBioMCPAgent(verbose=self.verbose)
+            articles = article_getter.fetch_articles(gene=gene_name, phenotype=phenotype)
+
+            # Pass articles to ArticleProcessorAgent to process and return a summary
+            article_processor = ArticleProcessorAgent(verbose=self.verbose)
+            # set_trace()
+            # articles is in json format
+            # Process articles using the process function in the ArticleProcessorAgent class
+            article_summaries = article_processor.process(articles=articles, gene=gene_name, phenotype=phenotype)
 
         return variant_data
       
@@ -281,8 +297,7 @@ class VariantGetterClinVarAgent:
                 "review_status": review_status,
                 "trait_names": trait_names,
             }
-            print(f"ClinVar data: {clinvar_data}"
-            )
+            # print(f"ClinVar data: {clinvar_data}")
 
             # set_trace()
 
@@ -318,6 +333,9 @@ class VariantGetterClinVarAgent:
 
         return clinvar_data
 
+    def fetch_clinvar_data_batch(self, variant_id):
+        pass
+
 class DataRetrievalAgent:
     def __init__(self, verbose=False):
         self.verbose = verbose
@@ -325,12 +343,114 @@ class DataRetrievalAgent:
     def retrieve(self, *args, **kwargs):
         return {}
 
+class ArticleProcessorAgent:
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+    # Takes as input the articles in json format fetched by ArticleGetterBioMCPAgent and processes them to return a summary
+    def process(self, *args, **kwargs):
+        print("In ArticleProcessorAgent process")
+        articles = kwargs.get("articles")
+        gene = kwargs.get("gene")
+        phenotype = kwargs.get("phenotype")
+        lit_articles = articles['articles']
+        # Get the number of articles 
+        num_lit_articles = len(lit_articles)
+        print(f"Number of articles from the literature: {num_lit_articles}")
+
+        if lit_articles is None or "error" in lit_articles:
+            return {"error": "No lit_articles to process or error in fetching lit_articles."}
+        if len(lit_articles) == 0:
+            return {"error": "No lit_articles found to process."}
+        summaries = []
+        article_dict = []
+        for lit_article in lit_articles[:30]:
+            title = lit_article.get("title", "No title")
+            print(f"Title: {title}")
+            abstract = lit_article.get("abstract")
+            print(f"Abstract: {abstract}")
+            # if abstract == "" or abstract is None:
+            #     abstract = "No abstract"
+            # else:
+            #     summary_prompt = f"Summarize the following article titled '{title}' solely using the abstract: {abstract} in 2-3 sentences focusing on its relevance to the gene and phenotype provided. You need have to access the full text of the article."
+            #     print(f"Querying LLM with prompt: {summary_prompt}")
+            #     # set_trace()
+            #     summary = query_llm(summary_prompt, model=LLM_CONFIG["default_model"], temperature=0.3)
+            #     summaries.append({
+            #         "title": title,
+            #         "summary": summary
+            #     })
+            # Create summary of all articles together
+            # Create a dictionary of abstract and title
+            article_dict.append({
+                "title": title,
+                "abstract": abstract
+            })
+        # print(f"Article dict: {article_dict}")
+        # Pass the article_dict to the LLM to get a summary for all articles to be output in json format with title and summary as keys and values
+        #summary_prompt = f"Summarize the articles in {article_dict} in 2-3 sentences focusing on its relevance to the gene and phenotype provided. You need have to access the full text of the article if abstract is not available. Return summary for all articles in json format with title and summary as keys and values"
+        
+        summary_prompt = (
+            f"Summarize the articles in {article_dict} focusing on their relevance to the {gene} and {phenotype} provided. "
+            "You need have to access the full text of the article if abstract is not available. "
+            "Comment on whether the articles suggest a role for the gene in the phenotype."
+            "If you use citations, create a bibliography near the end of the response"
+        )
+        print(f"Querying LLM with given prompt")
+        summary = query_llm(summary_prompt, model=LLM_CONFIG["default_model"], temperature=0.3)
+        set_trace()
+            
+        
+        return summaries
+        
+
 
 class ArticleGetterBioMCPAgent:
     def __init__(self, verbose=False):
         self.verbose = verbose
 
     def fetch_articles(self, *args, **kwargs):
+        # Execute biomcp article search --gene BRAF --limit 5 and return a json file containing all the articles found
+        gene = kwargs.get("gene")
+        phenotype = kwargs.get("phenotype")
+        if gene is None:
+            raise ValueError("Gene must be provided to fetch articles.")
+        command = [
+            "biomcp",
+            "article",
+            "search",
+            "--gene",
+            gene,
+            "--disease",
+            phenotype,
+            "-j",
+        ]
+        try:
+            if self.verbose:
+                print(f"Fetching articles for gene {gene} and phenotype {phenotype}")
+
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            # set_trace()
+            if result.returncode == 0:
+                articles = json.loads(result.stdout)
+                if self.verbose:
+                    print(f"Fetched {len(articles)} articles for gene {gene}")
+                # set_trace()
+                return articles #json
+                
+            else:
+                if self.verbose:
+                    print(f"Error fetching articles: {result.stderr.strip()}")
+                return {"error": result.stderr.strip() or "biomcp returned a non-zero exit code"}
+        except Exception as exc:
+            if self.verbose:
+                print(f"Exception fetching articles: {str(exc)}")
+            return {"error": str(exc)}  
+                
         return []
 
 
@@ -395,7 +515,7 @@ class VariantAggregationAgent:
         aggregated = {}
 
         if variant_getter is not None:
-            aggregated["VariantGetterBioMCPAgent"] = variant_getter.search_variants(coordinates)
+            aggregated["VariantGetterBioMCPAgent"] = variant_getter.search_variants(coordinates, phenotype)
 
         if alpha_genome_agent is not None and hasattr(alpha_genome_agent, "analyze"):
             aggregated["AlphaGenomeBioMCPAgent"] = alpha_genome_agent.analyze(
