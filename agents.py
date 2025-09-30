@@ -495,7 +495,7 @@ class AlphaGenomeAgent:
         """Search for variant details using genomic coordinates."""
         variant_data = {}
         converter = get_lifter('hg19', 'hg38', one_based=True)
-        for record in coordinates[:1]:  # Limit to first 10 for testing
+        for record in coordinates[:2]:  # Limit to first 10 for testing
             chrom = record["chrom"]
             pos = record["pos"]
             ref = record["ref"]
@@ -535,8 +535,8 @@ class AlphaGenomeAgent:
 
                 variant_data [variant_id] = {assay: 0.0 for assay in score_assays}
             
-            print(variant_data)
-            return variant_data
+        print(variant_data)
+        return variant_data
             
 
 
