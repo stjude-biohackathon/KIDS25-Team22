@@ -12,6 +12,8 @@
 
 # to list all models available (but may not be currently active): curl http://localhost:11434/api/tags | jq '.models[] | {name, parameter_size: .details.parameter_size, quant: .details.quantization_level}'
 # 
+from pathlib import Path
+from ranking import rank_variants
 
 from agents import (
     OrchestratorAgent,
@@ -44,7 +46,7 @@ parser.add_argument(
 parser.add_argument(
     "--phenotype",
     type=str,
-    default="breast cancer",
+    default="neurofibromatosis",
     help="Phenotype or disease term associated with the sample.",
 )
 parser.add_argument(
@@ -115,8 +117,8 @@ def main(file_path=None, phenotype=None, conda_env=None, use_cli_args=True):
 
     if phenotype_term is None:
         raise ValueError("A phenotype must be provided via argument or function call.")
-
-    return orchestrator_agent.coordinate(vcf_file, phenotype_term)
+    orchestrator_agent.coordinate(vcf_file, phenotype_term)
+    return rank_variants(Path("./data/aggregated_variants_object.pkl"))
 
 if __name__ == "__main__":
     main()

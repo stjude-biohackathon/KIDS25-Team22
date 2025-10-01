@@ -87,7 +87,47 @@ def _normalise_variant_id(raw_id: Optional[str]) -> Optional[str]:
 
 def _load_aggregated_data(pickle_path: Path) -> Dict[str, Any]:
     with pickle_path.open("rb") as handle:
-        return pickle.load(handle)
+        aggregated = pickle.load(handle)
+
+    if isinstance(aggregated, dict):
+        return aggregated
+
+    if isinstance(aggregated, list):
+        normalised: Dict[str, Any] = {
+            "VariantGetterBioMCPAgent": [],
+            "AlphaGenomeAgent": [],
+            "Evo2Agent": [],
+        }
+
+        for chunk in aggregated:
+            if not isinstance(chunk, list) or not chunk:
+                continue
+            sample = next((entry for entry in chunk if isinstance(entry, dict)), None)
+            if sample is None:
+                continue
+
+            if _looks_like_variant_getter(sample):
+                normalised["VariantGetterBioMCPAgent"].extend(chunk)
+            elif _looks_like_alpha(sample):
+                normalised["AlphaGenomeAgent"].extend(chunk)
+            elif _looks_like_evo2(sample):
+                normalised["Evo2Agent"].extend(chunk)
+
+        return normalised
+
+    raise TypeError(f"Unsupported aggregated data type: {type(aggregated)}")
+
+
+def _looks_like_variant_getter(entry: Dict[str, Any]) -> bool:
+    return "coordinate" in entry and "output" in entry
+
+
+def _looks_like_alpha(entry: Dict[str, Any]) -> bool:
+    return "_id" in entry and any(key.isupper() for key in entry if key != "_id")
+
+
+def _looks_like_evo2(entry: Dict[str, Any]) -> bool:
+    return "_id" in entry and "Evo2_deltaScore" in entry
 
 
 def _gather_variant_evidence(aggregated: Dict[str, Any]) -> List[VariantEvidence]:
@@ -143,10 +183,11 @@ def _gather_variant_evidence(aggregated: Dict[str, Any]) -> List[VariantEvidence
 
 def _build_prompt(evidence_blocks: List[VariantEvidence]) -> str:
     header = (
-        "You are a clinical genomics expert. Review the supplied variant evidence "
-        "and return a JSON array that ranks the variants from highest to lowest "
-        "clinical concern (1 = highest priority for follow-up). Use conservative "
-        "language and justify each ranking."
+        "You are a clinical genomics expert evaluating a case with the phenotype "
+        "neurofibromatosis. Review the supplied variant evidence and return a "
+        "JSON array that ranks the variants from highest to lowest clinical concern "
+        "(1 = highest priority for follow-up). Use conservative language and "
+        "justify each ranking."
     )
 
     expectations = (
@@ -160,7 +201,10 @@ def _build_prompt(evidence_blocks: List[VariantEvidence]) -> str:
     instructions = (
         "When forming the rationale consider: ClinVar annotations, literature "
         "notes, Evo2 delta scores (more negative may imply larger effect), and "
-        "AlphaGenome signals. If evidence indicates low risk, explain that."
+        "AlphaGenome signals. Prioritise variants most relevant to "
+        "neurofibromatosis when possible. If evidence indicates low risk, explain that."\
+        " Rank every variant listed above, use each variant exactly once, and "
+        "assign contiguous rank integers starting at 1 with no gaps."
     )
 
     return f"{header}\n\n{expectations}\n\nEvidence:\n{blocks}\n\n{instructions}"
@@ -209,6 +253,8 @@ def rank_variants(
         response = llm_query(prompt, **llm_kwargs)
     else:
         response = llm_query(prompt)
+    
+    # set_trace()
 
     parsed = _parse_llm_rankings(response)
 

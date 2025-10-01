@@ -801,7 +801,7 @@ class VariantAggregationAgent:
             )
 
         self.latest_results = aggregated
-        with open('aggregated_variants_object.pkl', 'wb') as file:
+        with open('./data/aggregated_variants_object.pkl', 'wb') as file:
             aggList = [aggregated["VariantGetterBioMCPAgent"], aggregated["AlphaGenomeAgent"], aggregated["Evo2Agent"]]
             pickle.dump(aggList, file)
         
