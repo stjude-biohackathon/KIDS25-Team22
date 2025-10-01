@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Genesis</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="hero-page">
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <!-- swap the dot for your logo image -->
+      <img src="{{ url_for('static', filename='onlylogo.png') }}" alt="GENESIS logo" class="brand-logo">
+      <span>GENESIS</span>
+    </div>
+    <nav class="nav">
+      <a>St Jude</a>
+      <a>Help</a>
+      <button class="cta">Team</button>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <main class="hero">
+    <img src="{{ url_for('static', filename='onlylogo.png') }}" alt="GENESIS logo" class="hero-logo">
+    <h3 class="hero-title">Stop guessing... Start ranking!</h3>
+
+    <!-- Prompt card (keep ONE) -->
+    <section class="prompt-wrap">
+      <div class="prompt-card">
+        <textarea id="input" placeholder="Upload a VCF and start ranking…" aria-label="Prompt"></textarea>
+
+        <div class="prompt-actions">
+          <label class="action" for="fileInput">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path d="M16.5 6.5l-7.78 7.78a3 3 0 104.24 4.24l8.13-8.13a5 5 0 10-7.07-7.07L4.9 10.34"
+                    fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Attach file
+            <input id="fileInput" type="file" hidden>
+          </label>
+
+          <button class="action" id="voiceBtn" type="button">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path d="M12 3a3 3 0 00-3 3v6a3 3 0 006 0V6a3 3 0 00-3-3z" fill="currentColor"/>
+              <path d="M19 12a7 7 0 01-14 0M12 19v3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            Voice
+          </button>
+
+          <div class="count" id="count">0/10000</div>
+
+          <button class="send" id="send" type="button" title="Send">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path d="M5 12h10M13 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <p class="helper">Tip: Shift+Enter for newline • Enter to send</p>
+    </section>
+
+    <!-- Quick suggestion cards (optional) -->
+    <!--section class="quick-grid">
+      <article class="quick">
+        <div class="q-title">abcd</div>
+        <div class="q-desc">hehehe</div>
+      </article>
+      <article class="quick active">
+        <div class="q-title">xyz</div>
+        <div class="q-desc">hello</div>
+      </article>
+      <article class="quick">
+        <div class="q-title">blah blah</div>
+        <div class="q-desc">blah blah blu</div>
+      </article>
+    </section -->
+  </main>
+
+  <!-- One script block -->
+  <script>
+    const input = document.getElementById("input");
+    const send  = document.getElementById("send");
+    const count = document.getElementById("count");
+
+    function updateCount() { count.textContent = `${input.value.length}/10000`; }
+    input.addEventListener("input", () => {
+      input.style.height = "64px";
+      input.style.height = Math.min(input.scrollHeight, 220) + "px";
+      updateCount();
+    });
+    updateCount();
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text })
+        });
+        await res.json();
+      } catch {}
+      input.value = "";
+      updateCount();
+      input.style.height = "64px";
+    }
+
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+    send.addEventListener("click", sendMessage);
+  </script>
+</body>
+</html>
