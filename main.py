@@ -55,11 +55,12 @@ parser.add_argument(
 )
 
 
-def main(file_path=None, phenotype=None):
-    args = parser.parse_args()
+def main(file_path=None, phenotype=None, conda_env=None, use_cli_args=True):
+    args = parser.parse_args() if use_cli_args else parser.parse_args([])
 
     vcf_file = file_path or args.vcf_file
     phenotype_term = phenotype or args.phenotype
+    conda_env_path = conda_env or args.conda_env
 
     # # Process files directory if provided
     # files_dir_content = ""
@@ -79,7 +80,7 @@ def main(file_path=None, phenotype=None):
     alpha_genome_biomcp_agent = AlphaGenomeBioMCPAgent(verbose=True)
     alpha_genome_agent = AlphaGenomeAgent(verbose=True)
 
-    evo2_agent = Evo2Agent(verbose=True)
+    # evo2_agent = Evo2Agent(verbose=True)
     gpn_agent = GPNAgent(verbose=True)
     ranking_agent = RankingAgent(verbose=True)
     reporter_agent = ReporterAgent(verbose=True)
@@ -95,7 +96,7 @@ def main(file_path=None, phenotype=None):
         article_getter_agent=article_getter_agent,
         alpha_genome_biomcp_agent=alpha_genome_biomcp_agent,
         alpha_genome_agent=alpha_genome_agent,
-        evo2_agent=evo2_agent,
+        evo2_agent=None, #evo2_agent,
         gpn_agent=gpn_agent,
         ranking_agent=ranking_agent,
         reporter_agent=reporter_agent,
@@ -103,11 +104,14 @@ def main(file_path=None, phenotype=None):
         # files_dir_content=files_dir_content,
         # mode=args.mode,
         # phenotype=phenotype_term,
-        conda_env=args.conda_env,
+        conda_env=conda_env_path,
     )
-    
+
     if vcf_file is None:
         raise ValueError("A VCF file must be provided via argument or function call.")
+
+    if not os.path.isfile(vcf_file):
+        raise FileNotFoundError(f"VCF file not found: {vcf_file}")
 
     if phenotype_term is None:
         raise ValueError("A phenotype must be provided via argument or function call.")
