@@ -38,7 +38,7 @@ parser = argparse.ArgumentParser(description="Carry out variant prioritization f
 parser.add_argument(
     "--vcf_file",
     type=str,
-    default="./clinvar.hg19.chr17.top500.vcf",
+    default="./data/clinvar.hg19.chr17.sampled.vcf",
     help="Path to the VCF containing variants to analyze.",
 )
 parser.add_argument(
