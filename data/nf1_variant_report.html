@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NF1 Variant Analysis Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #fff;
+        }
+        .header {
+            border-bottom: 3px solid #2c5aa0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #2c5aa0;
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        h2 {
+            color: #2c5aa0;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 5px;
+        }
+        h3 {
+            color: #444;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .variant-box {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            background: #f9f9f9;
+        }
+        .pathogenic { border-left: 4px solid #d32f2f; }
+        .conflicting { border-left: 4px solid #f57c00; }
+        .uncertain { border-left: 4px solid #fbc02d; }
+        .benign { border-left: 4px solid #388e3c; }
+        
+        .variant-title {
+            font-weight: bold;
+            font-size: 15px;
+            color: #222;
+            margin-bottom: 8px;
+        }
+        .variant-detail {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .label {
+            font-weight: 600;
+            color: #555;
+        }
+        .summary-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 3px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+        th {
+            background: #2c5aa0;
+            color: white;
+            padding: 10px;
+            text-align: left;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #666;
+        }
+        @media print {
+            body {
+                padding: 20px;
+            }
+            .variant-box {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Neurofibromatosis Type 1 (NF1) Variant Analysis Report</h1>
+        <div class="subtitle">ClinVar Data Analysis - Chromosome 17</div>
+        <div class="subtitle">Gene: NF1 (Gene ID: 4763)</div>
+        <div class="subtitle">Date: October 1, 2025</div>
+    </div>
+
+    <div class="summary-box">
+        <strong>Summary:</strong> Analysis of 7 NF1 variants from ClinVar database (GRCh37/hg19 reference). 
+        Three pathogenic variants identified with strong clinical evidence (splice site, nonsense, and frameshift mutations). 
+        One variant shows conflicting interpretations requiring additional clinical context.
+    </div>
+
+    <h2>1. Pathogenic Variants (Disease-Causing)</h2>
+
+    <div class="variant-box pathogenic">
+        <div class="variant-title">Variant 1: chr17:29654516 G>A</div>
+        <div class="variant-detail"><span class="label">dbSNP ID:</span> rs876660141</div>
+        <div class="variant-detail"><span class="label">Variant Type:</span> Splice acceptor variant</div>
+        <div class="variant-detail"><span class="label">Clinical Significance:</span> Pathogenic</div>
+        <div class="variant-detail"><span class="label">Review Status:</span> Criteria provided, multiple submitters, no conflicts</div>
+        <div class="variant-detail"><span class="label">Molecular Consequence:</span> SO:0001574 (splice acceptor variant)</div>
+        <div class="variant-detail"><span class="label">Clinical Impact:</span> Disrupts normal RNA splicing, likely resulting in aberrant transcript and loss of protein function</div>
+        <div class="variant-detail"><span class="label">Origin:</span> Germline (inherited) and de novo</div>
+    </div>
+
+    <div class="variant-box pathogenic">
+        <div class="variant-title">Variant 2: chr17:29657379 T>A</div>
+        <div class="variant-detail"><span class="label">dbSNP ID:</span> rs2069450324</div>
+        <div class="variant-detail"><span class="label">Variant Type:</span> Nonsense (stop-gain)</div>
+        <div class="variant-detail"><span class="label">Clinical Significance:</span> Pathogenic</div>
+        <div class="variant-detail"><span class="label">Review Status:</span> Criteria provided, single submitter</div>
+        <div class="variant-detail"><span class="label">Molecular Consequence:</span> SO:0001587 (nonsense)</div>
+        <div class="variant-detail"><span class="label">Clinical Impact:</span> Introduces premature stop codon leading to truncated, non-functional protein</div>
+        <div class="variant-detail"><span class="label">Origin:</span> Germline</div>
+    </div>
+
+    <div class="variant-box pathogenic">
+        <div class="variant-title">Variant 3: chr17:29552220 AC>A (1bp deletion)</div>
+        <div class="variant-detail"><span class="label">dbSNP ID:</span> rs1597710675</div>
+        <div class="variant-detail"><span class="label">Variant Type:</span> Frameshift deletion</div>
+        <div class="variant-detail"><span class="label">HGVS:</span> NC_000017.10:g.29552221del</div>
+        <div class="variant-detail"><span class="label">Clinical Significance:</span> Pathogenic</div>
+        <div class="variant-detail"><span class="label">Review Status:</span> Criteria provided, multiple submitters, no conflicts</div>
+        <div class="variant-detail"><span class="label">Molecular Consequence:</span> SO:0001589 (frameshift variant)</div>
+        <div class="variant-detail"><span class="label">Clinical Impact:</span> Frameshift mutation disrupting reading frame and causing protein dysfunction</div>
+        <div class="variant-detail"><span class="label">Origin:</span> Germline</div>
+    </div>
+
+    <h2>2. Variant with Conflicting Evidence</h2>
+
+    <div class="variant-box conflicting">
+        <div class="variant-title">Variant 4: chr17:29592354 G>A</div>
+        <div class="variant-detail"><span class="label">dbSNP ID:</span> rs876659197</div>
+        <div class="variant-detail"><span class="label">Variant Type:</span> Missense variant</div>
+        <div class="variant-detail"><span class="label">Clinical Significance:</span> <strong>Conflicting classifications</strong></div>
+        <div class="variant-detail" style="margin-left: 20px;">• Likely pathogenic: 1 submitter</div>
+        <div class="variant-detail" style="margin-left: 20px;">• Uncertain significance: 6 submitters</div>
+        <div class="variant-detail"><span class="label">Review Status:</span> Criteria provided, conflicting classifications</div>
+        <div class="variant-detail"><span class="label">Associated Phenotypes:</span> Neurofibromatosis type 1, Juvenile myelomonocytic leukemia, Cardiovascular phenotype</div>
+        <div class="variant-detail"><span class="label">Note:</span> Requires family segregation studies and additional functional evidence for definitive classification</div>
+        <div class="variant-detail"><span class="label">Origin:</span> Germline</div>
+    </div>
+
+    <h2>3. Variant of Uncertain Significance (VUS)</h2>
+
+    <div class="variant-box uncertain">
+        <div class="variant-title">Variant 5: chr17:29654553 C>G</div>
+        <div class="variant-detail"><span class="label">dbSNP ID:</span> rs876657714</div>
+        <div class="variant-detail"><span class="label">Variant Type:</span> Missense variant</div>
+        <div class="variant-detail"><span class="label">Clinical Significance:</span> Uncertain significance</div>
+        <div class="variant-detail"><span class="label">Review Status:</span> Criteria provided, single submitter</div>
+        <div class="variant-detail"><span class="label">Molecular Consequence:</span> SO:0001583 (missense variant)</div>
+        <div class="variant-detail"><span class="label">Note:</span> Insufficient evidence to determine pathogenicity; not recommended for clinical decision-making without additional data</div>
+        <div class="variant-detail"><span class="label">Origin:</span> Germline</div>
+    </div>
+
+    <h2>4. Likely Benign / Benign Variants</h2>
+
+    <div class="variant-box benign">
+        <div class="variant-title">Variant 6: chr17:29557957 G>T</div>
+        <div class="variant-detail"><span class="label">dbSNP ID:</span> rs764474296</div>
+        <div class="variant-detail"><span class="label">Variant Type:</span> Intronic variant</div>
+        <div class="variant-detail"><span class="label">Clinical Significance:</span> Likely benign</div>
+        <div class="variant-detail"><span class="label">Review Status:</span> Criteria provided, single submitter</div>
+        <div class="variant-detail"><span class="label">Allele Frequency (ExAC):</span> 0.00001 (1 in 100,000)</div>
+        <div class="variant-detail"><span class="label">Note:</span> Located in intron; unlikely to affect protein function</div>
+    </div>
+
+    <div class="variant-box benign">
+        <div class="variant-title">Variant 7: chr17:29684304 T>C</div>
+        <div class="variant-detail"><span class="label">dbSNP ID:</span> rs767860040</div>
+        <div class="variant-detail"><span class="label">Variant Type:</span> Synonymous variant</div>
+        <div class="variant-detail"><span class="label">Clinical Significance:</span> Likely benign</div>
+        <div class="variant-detail"><span class="label">Review Status:</span> Criteria provided, multiple submitters, no conflicts</div>
+        <div class="variant-detail"><span class="label">Allele Frequency (ExAC):</span> 0.00001 (1 in 100,000)</div>
+        <div class="variant-detail"><span class="label">Molecular Consequence:</span> SO:0001819 (synonymous variant)</div>
+        <div class="variant-detail"><span class="label">Note:</span> Silent mutation; does not change amino acid sequence</div>
+    </div>
+
+    <h2>5. Summary Table</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Position</th>
+                <th>Change</th>
+                <th>Type</th>
+                <th>Significance</th>
+                <th>dbSNP</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>29654516</td>
+                <td>G>A</td>
+                <td>Splice acceptor</td>
+                <td><strong>Pathogenic</strong></td>
+                <td>rs876660141</td>
+            </tr>
+            <tr>
+                <td>29657379</td>
+                <td>T>A</td>
+                <td>Nonsense</td>
+                <td><strong>Pathogenic</strong></td>
+                <td>rs2069450324</td>
+            </tr>
+            <tr>
+                <td>29552220</td>
+                <td>AC>A</td>
+                <td>Frameshift</td>
+                <td><strong>Pathogenic</strong></td>
+                <td>rs1597710675</td>
+            </tr>
+            <tr>
+                <td>29592354</td>
+                <td>G>A</td>
+                <td>Missense</td>
+                <td><strong>Conflicting</strong></td>
+                <td>rs876659197</td>
+            </tr>
+            <tr>
+                <td>29654553</td>
+                <td>C>G</td>
+                <td>Missense</td>
+                <td>Uncertain</td>
+                <td>rs876657714</td>
+            </tr>
+            <tr>
+                <td>29557957</td>
+                <td>G>T</td>
+                <td>Intronic</td>
+                <td>Likely benign</td>
+                <td>rs764474296</td>
+            </tr>
+            <tr>
+                <td>29684304</td>
+                <td>T>C</td>
+                <td>Synonymous</td>
+                <td>Likely benign</td>
+                <td>rs767860040</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>6. Key Clinical Insights</h2>
+
+    <ul>
+        <li><strong>Loss-of-function mutations predominate:</strong> The pathogenic variants include splice site, nonsense, and frameshift mutations, all resulting in loss of NF1 protein (neurofibromin) function</li>
+        
+        <li><strong>Haploinsufficiency mechanism:</strong> NF1 acts as a tumor suppressor gene; one mutated copy is sufficient to increase disease risk through reduced neurofibromin levels</li>
+        
+        <li><strong>Mutation spectrum:</strong> The variety of mutation types reflects the large size of the NF1 gene and multiple mechanisms of pathogenicity</li>
+        
+        <li><strong>Conflicting evidence:</strong> The missense variant at position 29592354 requires additional clinical context, segregation data, and functional studies for definitive interpretation</li>
+        
+        <li><strong>Phenotypic variability:</strong> Some variants are associated with additional features beyond classic NF1, including cardiovascular abnormalities and increased risk of juvenile myelomonocytic leukemia</li>
+        
+        <li><strong>Clinical testing considerations:</strong> Pathogenic variants should be confirmed with orthogonal methods; VUS results require genetic counseling regarding limitations</li>
+    </ul>
+
+    <h2>7. Recommendations</h2>
+
+    <ul>
+        <li>Pathogenic variants (positions 29654516, 29657379, 29552220) are reportable findings consistent with NF1 diagnosis</li>
+        <li>The conflicting variant (29592354) should be classified as VUS unless additional evidence becomes available</li>
+        <li>Variants of uncertain significance should not be used alone for clinical decision-making</li>
+        <li>Genetic counseling is recommended for all patients with NF1-related findings</li>
+        <li>Regular monitoring according to NF1 clinical guidelines is appropriate for confirmed pathogenic variant carriers</li>
+    </ul>
+
+    <div class="footer">
+        <p><strong>Data Source:</strong> ClinVar VCF file (GRCh37/hg19 reference assembly)</p>
+        <p><strong>Reference Genome:</strong> GRCh37 (hg19)</p>
+        <p><strong>Analysis Date:</strong> October 1, 2025</p>
+        <p><strong>Note:</strong> This report is for research and informational purposes. Clinical interpretation should be performed by qualified healthcare professionals with appropriate genetic counseling.</p>
+    </div>
+</body>
+</html>
