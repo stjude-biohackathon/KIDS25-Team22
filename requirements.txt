@@ -45,7 +45,6 @@ flake8==7.3.0
 fonttools==4.59.0
 frozenlist==1.7.0
 fsspec==2025.3.0
-geneformer @ file:///Users/tnandi/Downloads/agents/agentic_lab/Geneformer
 globus-sdk==3.63.0
 graphviz==0.21
 grpcio==1.74.0
