@@ -1,6 +1,6 @@
 from llm_utils import query_llm
 #import prompts
-import os, sys
+import os, sys, pickle
 import subprocess
 import utils
 from config import LLM_CONFIG
@@ -12,6 +12,7 @@ import argparse
 import json
 from bs4 import BeautifulSoup
 from pdb import set_trace
+import json
 
 from Bio import SeqIO
 import gzip
@@ -85,13 +86,13 @@ class OrchestratorAgent:
             )
             self.last_variant_results = result
             return result
-        set_trace()
+        #set_trace()
         result = {
             "VariantGetterBioMCPAgent": self.variant_getter_agent.search_variants(coordinates, phenotype),
             "AlphaGenomeAgent": self.alpha_genome_agent.predict_variants_effects(coordinates),
-            # "Evo2Agent": self.evo2_agent.getEvo2score(coordinates)
+            "Evo2Agent": self.evo2_agent.getEvo2score(coordinates)
         }
-        set_trace()
+        #set_trace()
         self.last_variant_results = result
         return result
 
@@ -182,6 +183,9 @@ class VariantGetterBioMCPAgent:
                     # set_trace()
                     print("Completed biomcp variant get call")
                     if result.returncode == 0:
+                        result_dict = json.loads(result.stdout)
+                        #set_trace()
+                        print(result.stdout)
                         formatted_output = utils.format_biomcp_variant_output(result.stdout)
                         # if self.verbose:
                         #     print(formatted_output)
@@ -258,9 +262,9 @@ class VariantGetterBioMCPAgent:
                     'lit_article_summary': None,
                     'clinvar_data': None 
                 })
-            #set_trace()    
-            #with open('my_object.pkl', 'wb') as file:
-            #    pickle.dump(variant_data_list, file)
+        #set_trace()    
+        with open('variant_literature_object.pkl', 'wb') as file:
+            pickle.dump(variant_data_list, file)
         return variant_data_list
       
 # Gets output from biomcp variant get to fetch clinvar ids and obtains clinvar data from ncbi    
@@ -270,7 +274,7 @@ class VariantGetterClinVarAgent:
 
     def fetch_clinvar_data_old(self, coordinates):
         clinvar_data = []
-        for record in coordinates:
+        for record in coordinates[0:2]:
             chrom = record["chrom"]
             pos = record["pos"]
             ref = record["ref"]
@@ -516,12 +520,12 @@ class AlphaGenomeAgent:
         """Search for variant details using genomic coordinates."""
         variant_data = {}
         converter = get_lifter('hg19', 'hg38', one_based=True)
-        for record in coordinates[:2]:  # Limit to first 10 for testing
+        for record in coordinates[0:2]:  # Limit to first 10 for testing
             chrom = record["chrom"]
             pos = record["pos"]
             ref = record["ref"]
             alt = record["alt"]
-            variant_id = chrom + ':' + str(pos) + ":" + ref + '>' + alt
+            variant_id = chrom + ':g.' + str(pos) + ref + '>' + alt
             
             newCoords = converter[chrom][pos][0]
             chrom_hg38 = newCoords[0]
@@ -545,16 +549,20 @@ class AlphaGenomeAgent:
 
                     df_scores = variant_scorers.tidy_scores(variant_scores)
                     top_scores = df_scores.groupby(['output_type']).agg('first')
-                    top_scores_dict = dict(zip(top_scores.index, top_scores['quantile_score']))
-                    variant_data[variant_id] = top_scores_dict
+                    
+                    variant_data = dict(zip(top_scores.index, top_scores['quantile_score']))
+                    variant_data['_id'] = variant_id
 
             except Exception as exc:
                 score_assays = [
                     'ATAC', 'CAGE', 'CHIP_HISTONE', 'CHIP_TF', 'CONTACT_MAPS', 'DNASE', 'PROCAP', 
                     'RNA_SEQ', 'SPLICE_JUNCTIONS', 'SPLICE_SITES', 'SPLICE_SITE_USAGE'
                 ]
-
-                variant_data [variant_id] = {assay: 0.0 for assay in score_assays}
+                variant_data = {assay: 0.0 for assay in score_assays}
+                variant_data ["_id"] = variant_id
+        
+        with open('variant_alphagenome_object.pkl', 'wb') as file:
+            pickle.dump(variant_data, file)
             
         print(variant_data)
         return variant_data
@@ -664,19 +672,19 @@ class Evo2Agent:
     def getEvo2score(self, coordinates):
         evo2_results = {}
 
-        variant_data = {}
-        for record in coordinates[:1]:  # Limit to first 10 for testing
+        variant_data = []
+        for record in coordinates[0:2]:  # Limit to first 10 for testing
             chrom = record["chrom"]
             coordinates = record["pos"]
             ref = record["ref"]
             alt = record["alt"]
-            variant_id = chrom + ':' + str(coordinates) + ":" + ref + '>' + alt
+            variant_id = chrom + ':g.' + str(coordinates) + ref + '>' + alt
             
-            #print(chr,coordinates,ref,alt)
+            print(chr,coordinates,ref,alt)
             WINDOW_SIZE = 8192
 
             # Read the reference genome sequence of chromosome 17
-            with gzip.open(os.path.join('hg19','chr'+str(chrom)+'.fa.gz'), "rt") as handle:
+            with gzip.open(os.path.join('./data/hg19','chr'+str(chrom)+'.fa.gz'), "rt") as handle:
                 for record in SeqIO.parse(handle, "fasta"):
                     seq_chr = str(record.seq)
                     break
@@ -710,9 +718,18 @@ class Evo2Agent:
             refScore = self.calculateSequenceScore(ref_seq, self.runEvo2(ref_seq))
             print("refScore",refScore)
             print("varScore",varScore)
-            finalScore={"Variant":str(chr)+":"+str(coordinates)+ref+">"+alt, "Evo2_deltaScore":float(varScore-refScore)}
-            print(finalScore)
-            variant_data[variant_id] = finalScore
+            #finalScore={"Variant":str(chr)+":"+str(coordinates)+ref+">"+alt, "Evo2_deltaScore":float(varScore-refScore)}
+            #print(finalScore)
+            variant_data.append({
+                '_id': variant_id,
+                'Evo2_deltaScore': float(varScore-refScore)
+            })
+            #variant_data["_id"] = variant_id
+            #variant_data[variant_id] = float(varScore-refScore)
+            print(variant_data)
+        
+        with open('variant_evo2_object.pkl', 'wb') as file:
+            pickle.dump(variant_data, file)
 
         return variant_data
 
@@ -782,4 +799,8 @@ class VariantAggregationAgent:
             )
 
         self.latest_results = aggregated
+        with open('aggregated_variants_object.pkl', 'wb') as file:
+            aggList = [aggregated["VariantGetterBioMCPAgent"], aggregated["AlphaGenomeAgent"], aggregated["Evo2Agent"]]
+            pickle.dump(aggList, file)
+        
         return aggregated

@@ -38,7 +38,7 @@ parser = argparse.ArgumentParser(description="Carry out variant prioritization f
 parser.add_argument(
     "--vcf_file",
     type=str,
-    default="./data/clinvar.hg19.chr17.sampled.vcf",
+    default="./data/clinvar.hg19.chr17.test.vcf",
     help="Path to the VCF containing variants to analyze.",
 )
 parser.add_argument(
@@ -80,7 +80,7 @@ def main(file_path=None, phenotype=None, conda_env=None, use_cli_args=True):
     alpha_genome_biomcp_agent = AlphaGenomeBioMCPAgent(verbose=True)
     alpha_genome_agent = AlphaGenomeAgent(verbose=True)
 
-    # evo2_agent = Evo2Agent(verbose=True)
+    evo2_agent = Evo2Agent(verbose=True)
     gpn_agent = GPNAgent(verbose=True)
     ranking_agent = RankingAgent(verbose=True)
     reporter_agent = ReporterAgent(verbose=True)
@@ -96,7 +96,7 @@ def main(file_path=None, phenotype=None, conda_env=None, use_cli_args=True):
         article_getter_agent=article_getter_agent,
         alpha_genome_biomcp_agent=alpha_genome_biomcp_agent,
         alpha_genome_agent=alpha_genome_agent,
-        evo2_agent=None, #evo2_agent,
+        evo2_agent=evo2_agent,
         gpn_agent=gpn_agent,
         ranking_agent=ranking_agent,
         reporter_agent=reporter_agent,
