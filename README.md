@@ -3,7 +3,7 @@
 
 # Genesis: Multi-Modal Agentic AI for Cancer Variant Effect Prioritization
 
-![Alt text](assets/genesis_summary.png)
+![Alt text](assets/genesis_summary.jpeg)
 
 
 ## What this repository is
