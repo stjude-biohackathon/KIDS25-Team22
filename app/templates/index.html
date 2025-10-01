@@ -29,25 +29,25 @@
     <!-- Prompt card (keep ONE) -->
     <section class="prompt-wrap">
       <div class="prompt-card">
-        <textarea id="input" placeholder="Upload a VCF and start ranking…" aria-label="Prompt"></textarea>
+        <textarea id="input" placeholder="Describe the case or notes…" aria-label="Prompt"></textarea>
+
+        <div class="prompt-fields">
+          <label class="field">
+            <span class="field-label">Phenotype</span>
+            <input id="phenotypeInput" type="text" placeholder="e.g., breast cancer" />
+          </label>
+        </div>
 
         <div class="prompt-actions">
-          <label class="action" for="fileInput">
+          <label class="action" for="fileInput" id="fileLabel">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
               <path d="M16.5 6.5l-7.78 7.78a3 3 0 104.24 4.24l8.13-8.13a5 5 0 10-7.07-7.07L4.9 10.34"
                     fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
             </svg>
-            Attach file
-            <input id="fileInput" type="file" hidden>
+            <span class="label-text">Attach file</span>
+            <span class="file-name" id="fileName"></span>
+            <input id="fileInput" type="file" accept=".vcf,.vcf.gz" hidden>
           </label>
-
-          <button class="action" id="voiceBtn" type="button">
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-              <path d="M12 3a3 3 0 00-3 3v6a3 3 0 006 0V6a3 3 0 00-3-3z" fill="currentColor"/>
-              <path d="M19 12a7 7 0 01-14 0M12 19v3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-            </svg>
-            Voice
-          </button>
 
           <div class="count" id="count">0/10000</div>
 
@@ -60,6 +60,22 @@
         </div>
       </div>
       <p class="helper">Tip: Shift+Enter for newline • Enter to send</p>
+    </section>
+
+    <section class="output-wrap">
+      <div class="output-card">
+        <h4 class="output-title">Logs and results</h4>
+        <div class="output-columns">
+          <div class="output-column">
+            <h5 class="output-subtitle">Logs</h5>
+            <pre id="logOutput" class="log-output" aria-live="polite"></pre>
+          </div>
+          <div class="output-column">
+            <h5 class="output-subtitle">Result</h5>
+            <pre id="responseOutput" class="response-output"></pre>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Quick suggestion cards (optional) -->
@@ -84,6 +100,14 @@
     const input = document.getElementById("input");
     const send  = document.getElementById("send");
     const count = document.getElementById("count");
+    const fileInput = document.getElementById("fileInput");
+    const fileLabel = document.getElementById("fileLabel");
+    const fileName = document.getElementById("fileName");
+    const logOutput = document.getElementById("logOutput");
+    const responseOutput = document.getElementById("responseOutput");
+    const phenotypeInput = document.getElementById("phenotypeInput");
+
+    let logSource = null;
 
     function updateCount() { count.textContent = `${input.value.length}/10000`; }
     input.addEventListener("input", () => {
@@ -93,26 +117,110 @@
     });
     updateCount();
 
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      fileName.textContent = file ? file.name : "";
+      fileLabel.dataset.filename = file ? "selected" : "";
+    });
+
+    function closeLogStream() {
+      if (logSource) {
+        logSource.close();
+        logSource = null;
+      }
+    }
+
+    function appendLog(line) {
+      if (line === undefined || line === null) return;
+      const text = line;
+      logOutput.textContent += (text ? text : "") + "\n";
+      logOutput.scrollTop = logOutput.scrollHeight;
+    }
+
+    function generateLogId() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+      }
+      return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function startLogStream(logId) {
+      closeLogStream();
+      logOutput.textContent = "";
+      logSource = new EventSource(`/logs/${logId}`);
+      logSource.onmessage = event => appendLog(event.data);
+      logSource.addEventListener("done", () => {
+        closeLogStream();
+      });
+      logSource.onerror = () => {
+        appendLog("Log stream interrupted.");
+        closeLogStream();
+      };
+    }
+
     async function sendMessage() {
       const text = input.value.trim();
-      if (!text) return;
+      const phenotype = phenotypeInput.value.trim();
+      const file = fileInput.files[0];
+      if (!phenotype && !file) {
+        appendLog("Error: phenotype is required when no VCF is uploaded.");
+        return;
+      }
+
+      const logId = generateLogId();
+      startLogStream(logId);
+      responseOutput.textContent = "";
+
+      const formData = new FormData();
+      formData.append("message", text);
+      formData.append("phenotype", phenotype);
+      formData.append("log_id", logId);
+      if (file) formData.append("vcf_file", file);
+
       try {
         const res = await fetch("/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text })
+          body: formData
         });
-        await res.json();
-      } catch {}
-      input.value = "";
-      updateCount();
-      input.style.height = "64px";
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const errorMsg = payload.error || res.statusText || "Request failed";
+          appendLog(`Error: ${errorMsg}`);
+          responseOutput.textContent = errorMsg;
+          return;
+        }
+        if (payload.reply !== undefined) {
+          responseOutput.textContent =
+            typeof payload.reply === "string"
+              ? payload.reply
+              : JSON.stringify(payload.reply, null, 2);
+        }
+      } catch (error) {
+        appendLog(`Network error: ${error && error.message ? error.message : error}`);
+        responseOutput.textContent = "Network error";
+        closeLogStream();
+      } finally {
+        input.value = "";
+        fileInput.value = "";
+        fileLabel.dataset.filename = "";
+        fileName.textContent = "";
+        phenotypeInput.value = "";
+        updateCount();
+        input.style.height = "64px";
+      }
     }
 
     input.addEventListener("keydown", e => {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
+    phenotypeInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
     send.addEventListener("click", sendMessage);
+    window.addEventListener("beforeunload", closeLogStream);
   </script>
 </body>
 </html>

@@ -89,7 +89,7 @@ class OrchestratorAgent:
         result = {
             "VariantGetterBioMCPAgent": self.variant_getter_agent.search_variants(coordinates, phenotype),
             "AlphaGenomeAgent": self.alpha_genome_agent.predict_variants_effects(coordinates),
-            "Evo2Agent": self.evo2_agent.getEvo2score(coordinates)
+            # "Evo2Agent": self.evo2_agent.getEvo2score(coordinates)
         }
         set_trace()
         self.last_variant_results = result
@@ -149,107 +149,118 @@ class VariantGetterBioMCPAgent:
         """Search for variant details using genomic coordinates."""
         
         variant_data_list = []
-        for record in coordinates[:2]:  # Limit to first 10 for testing
+        for record in coordinates[0:2]:  # Limit to first 10 for testing
             variant_data = {}
             chrom = record["chrom"]
             pos = record["pos"]
             ref = record["ref"]
             alt = record["alt"]
-            var_id = 'chr' + chrom + ':g.' + str(pos) + ref + '>' + alt
-            # var_id = 'chr11:g.32392032G>A'
-            # var_id = 'chr11:g.32413578G>A'
-            print(f"var_id: {var_id}")
-            command = [
-                "biomcp",
-                "variant",
-                "get",
-                "-j",
-                var_id,
-            ]
+            if ref in ['A', 'C', 'T', 'G'] and alt in ['A', 'C', 'T', 'G']: # biomcp doesn't accept indels
+                var_id = 'chr' + chrom + ':g.' + str(pos) + ref + '>' + alt
+                # var_id = 'chr11:g.32392032G>A'
+                # var_id = 'chr11:g.32413578G>A'
+                print(f"var_id: {var_id}")
+                command = [
+                    "biomcp",
+                    "variant",
+                    "get",
+                    "-j",
+                    var_id,
+                ]
 
-            try:
-                if self.verbose:
-                    print(f"Searching variants for {var_id}")
+                try:
+                    if self.verbose:
+                        print(f"Searching variants for {var_id}")
 
-                result = subprocess.run(
-                    command,
-                    capture_output=True,
-                    text=True,
-                    timeout=60,
-                )
+                    result = subprocess.run(
+                        command,
+                        capture_output=True,
+                        text=True,
+                        timeout=60,
+                    )
 
-                # set_trace()
-                print("Completed biomcp variant get call")
-                if result.returncode == 0:
-                    formatted_output = utils.format_biomcp_variant_output(result.stdout)
-                    # if self.verbose:
-                    #     print(formatted_output)
-                    variant_data = {
+                    # set_trace()
+                    print("Completed biomcp variant get call")
+                    if result.returncode == 0:
+                        formatted_output = utils.format_biomcp_variant_output(result.stdout)
+                        # if self.verbose:
+                        #     print(formatted_output)
+                        variant_data = {
+                                "coordinate": record,
+                                "output": result.stdout.strip(),
+                                "output_table": formatted_output,
+                            }
+                        
+                    else:
+                        variant_data = {
+                                "coordinate": record,
+                                "error": result.stderr.strip() or "biomcp returned a non-zero exit code",
+                            }
+                    # set_trace()
+                except Exception as exc:
+                    print("In except L200")
+                    variant_data.append(
+                        {
                             "coordinate": record,
-                            "output": result.stdout.strip(),
-                            "output_table": formatted_output,
+                            "error": str(exc),
                         }
-                    
+                    )
+
+                # Send the Clinvar IDs to the ClinVar agent to fetch more data
+                # clinvar_id = query_llm(f"What is the ClinVar ID (Variant Id in section Clinvar) fetched for the variant {var_id} from {result}? If there are multiple, list them all separated by commas. If there is none, respond with 'None'.")
+                # print(f"ClinVar ID from LLM: {clinvar_id}")
+                # if clinvar_id.lower() == 'none':
+                #     continue
+                # In the result.stdout, find the line that starts with "variant_id" and extract the Variant Id
+                # Extract variant_id from result.stdout
+                variant_id_match = re.search(r'"variant_id":\s*(\d+)', result.stdout)
+                variant_id = variant_id_match.group(1) if variant_id_match else None
+                # set_trace()
+                if variant_id is None:
+                    return {"error": "No ClinVar ID found in BioMCP output."}
                 else:
-                    variant_data = {
-                            "coordinate": record,
-                            "error": result.stderr.strip() or "biomcp returned a non-zero exit code",
-                        }
+                    print("Fetching clinVar data")
+                    variant_id = int(variant_id)
+                    clinvar_agent = VariantGetterClinVarAgent(verbose=self.verbose)
+                    clinvar_results = clinvar_agent.fetch_clinvar_data(variant_id)
+
+                variant_data.update({"clinvar_data": clinvar_results})
                 # set_trace()
-            except Exception as exc:
-                variant_data.append(
-                    {
-                        "coordinate": record,
-                        "error": str(exc),
-                    }
-                )
 
-            # Send the Clinvar IDs to the ClinVar agent to fetch more data
-            # clinvar_id = query_llm(f"What is the ClinVar ID (Variant Id in section Clinvar) fetched for the variant {var_id} from {result}? If there are multiple, list them all separated by commas. If there is none, respond with 'None'.")
-            # print(f"ClinVar ID from LLM: {clinvar_id}")
-            # if clinvar_id.lower() == 'none':
-            #     continue
-            # In the result.stdout, find the line that starts with "variant_id" and extract the Variant Id
-            # Extract variant_id from result.stdout
-            variant_id_match = re.search(r'"variant_id":\s*(\d+)', result.stdout)
-            variant_id = variant_id_match.group(1) if variant_id_match else None
-            # set_trace()
-            if variant_id is None:
-                return {"error": "No ClinVar ID found in BioMCP output."}
+                # Extract genename from variant_data['output'] string (e.g., WT1 from "genename": "WT1")
+                gene_match = re.search(r'"genename":\s*"([^"]+)"', variant_data['output'])
+                gene_name = gene_match.group(1) if gene_match else "Unknown"
+                # variant_data.update({"gene_name": gene_name})
+
+                # Create an instance of the ArticleGetterBioMCPAgent; pass the gene name and phenotype for it to retrieve articles and return in json format for ArticleProcessorAgent to process
+                print("fetching articles using ArticleGetterBioMCPAgent.fetch_articles()")
+                article_getter = ArticleGetterBioMCPAgent(verbose=self.verbose)
+                articles = article_getter.fetch_articles(gene=gene_name, phenotype=phenotype)
+
+                # Pass articles to ArticleProcessorAgent to process and return a summary
+                article_processor = ArticleProcessorAgent(verbose=self.verbose)
+                # set_trace()
+                # articles is in json format
+                # Process articles using the process function in the ArticleProcessorAgent class
+                article_summaries = article_processor.process(articles=articles, gene=gene_name, phenotype=phenotype)
+
+                # Collect article summary for all variants 
+                variant_data.update({"lit_article_summary": article_summaries})
+                # Save as pickl for Franz (his agent accepts a lit of dicts as input)
+                
+                variant_data_list.append(variant_data)
+
             else:
-                print("Fetching clinVar data")
-                variant_id = int(variant_id)
-                clinvar_agent = VariantGetterClinVarAgent(verbose=self.verbose)
-                clinvar_results = clinvar_agent.fetch_clinvar_data(variant_id)
-
-            variant_data.update({"clinvar_data": clinvar_results})
-            # set_trace()
-
-            # Extract genename from variant_data['output'] string (e.g., WT1 from "genename": "WT1")
-            gene_match = re.search(r'"genename":\s*"([^"]+)"', variant_data['output'])
-            gene_name = gene_match.group(1) if gene_match else "Unknown"
-            # variant_data.update({"gene_name": gene_name})
-
-            # Create an instance of the ArticleGetterBioMCPAgent; pass the gene name and phenotype for it to retrieve articles and return in json format for ArticleProcessorAgent to process
-            print("fetching articles using ArticleGetterBioMCPAgent.fetch_articles()")
-            article_getter = ArticleGetterBioMCPAgent(verbose=self.verbose)
-            articles = article_getter.fetch_articles(gene=gene_name, phenotype=phenotype)
-
-            # Pass articles to ArticleProcessorAgent to process and return a summary
-            article_processor = ArticleProcessorAgent(verbose=self.verbose)
-            # set_trace()
-            # articles is in json format
-            # Process articles using the process function in the ArticleProcessorAgent class
-            article_summaries = article_processor.process(articles=articles, gene=gene_name, phenotype=phenotype)
-
-            # Collect article summary for all variants 
-            variant_data.update({"lit_article_summary": article_summaries})
-            # Save as pickl for Franz (his agent accepts a lit of dicts as input)
-            
-            variant_data_list.append(variant_data)
-        #set_trace()    
-        #with open('my_object.pkl', 'wb') as file:
-        #    pickle.dump(variant_data_list, file)
+                variant_data_list.append({
+                    'coordinate': record,
+                    'output': None,
+                    'output_table': None,
+                    'lit_article_summary': None,
+                    'clinvar_data': None 
+                })
+            #set_trace()    
+            #with open('my_object.pkl', 'wb') as file:
+            #    pickle.dump(variant_data_list, file)
         return variant_data_list
       
 # Gets output from biomcp variant get to fetch clinvar ids and obtains clinvar data from ncbi    

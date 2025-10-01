@@ -59,8 +59,18 @@ body.hero-page{
   border:0; padding:16px; font-size:18px; line-height:1.5; color:var(--ink);
   border-radius:12px; background:#fff;
 }
+.prompt-fields{
+  margin-top:14px; display:flex; flex-wrap:wrap; gap:14px;
+}
+.field{ display:flex; flex-direction:column; gap:6px; font-size:14px; color:var(--muted); }
+.field-label{ font-weight:600; letter-spacing:.02em; }
+.field input{
+  padding:10px 14px; border-radius:10px; border:1px solid rgba(15,23,42,.12);
+  background:#fff; font-size:16px; color:var(--ink);
+}
+.field input:focus{ outline:2px solid rgba(230,87,134,.25); outline-offset:2px; }
 .prompt-actions{
-  margin-top:10px; display:grid; grid-template-columns:auto auto 1fr auto; gap:12px; align-items:center;
+  margin-top:14px; display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center;
 }
 .action{
   display:inline-flex; align-items:center; gap:8px; color:var(--muted);
@@ -93,8 +103,32 @@ body.hero-page{
 .q-title{font-weight:700; margin-bottom:6px}
 .q-desc{color:var(--muted); font-size:14px}
 
+/* ===== Output panel ===== */
+.output-wrap{ width:min(980px, 100%); }
+.output-card{
+  background:var(--card); border-radius:18px; padding:18px;
+  border:1px solid rgba(2,6,23,.08); box-shadow:var(--ring);
+}
+.output-title{
+  margin:0 0 12px; font-size:18px; font-weight:700; letter-spacing:.02em;
+}
+.output-columns{
+  display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px;
+}
+.output-column{ display:flex; flex-direction:column; gap:8px; }
+.output-subtitle{ margin:0; font-size:14px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+.output-card pre{
+  margin:0; padding:12px; background:rgba(15,23,42,.05);
+  border-radius:12px; font-size:13px; line-height:1.45; color:var(--ink);
+  border:1px solid rgba(15,23,42,.08); white-space:pre-wrap; word-break:break-word;
+}
+.log-output{ max-height:260px; overflow-y:auto; }
+.response-output{ min-height:120px; max-height:260px; overflow-y:auto; }
+
 /* responsive */
 @media (max-width: 720px){
-  .prompt-actions{ grid-template-columns:auto auto 1fr auto; }
+  .prompt-fields{ flex-direction:column; }
+  .prompt-actions{ grid-template-columns:auto 1fr auto; }
   .quick-grid{ grid-template-columns:1fr; }
+  .output-columns{ grid-template-columns:1fr; }
 }
