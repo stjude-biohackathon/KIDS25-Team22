@@ -150,7 +150,7 @@ class VariantGetterBioMCPAgent:
         """Search for variant details using genomic coordinates."""
         
         variant_data_list = []
-        for record in coordinates[0:2]:  # Limit to first 10 for testing
+        for record in coordinates[0:3]:  # Limit to first 10 for testing
             variant_data = {}
             chrom = record["chrom"]
             pos = record["pos"]
@@ -274,7 +274,7 @@ class VariantGetterClinVarAgent:
 
     def fetch_clinvar_data_old(self, coordinates):
         clinvar_data = []
-        for record in coordinates[0:2]:
+        for record in coordinates[0:3]:
             chrom = record["chrom"]
             pos = record["pos"]
             ref = record["ref"]
@@ -518,9 +518,9 @@ class AlphaGenomeAgent:
             self, coordinates, phenotype=None,
     ):
         """Search for variant details using genomic coordinates."""
-        variant_data = {}
+        variant_data_list = []
         converter = get_lifter('hg19', 'hg38', one_based=True)
-        for record in coordinates[0:2]:  # Limit to first 10 for testing
+        for record in coordinates[0:3]:  # Limit to first 10 for testing
             chrom = record["chrom"]
             pos = record["pos"]
             ref = record["ref"]
@@ -552,6 +552,7 @@ class AlphaGenomeAgent:
                     
                     variant_data = dict(zip(top_scores.index, top_scores['quantile_score']))
                     variant_data['_id'] = variant_id
+                    variant_data_list.append(variant_data)
 
             except Exception as exc:
                 score_assays = [
@@ -560,12 +561,13 @@ class AlphaGenomeAgent:
                 ]
                 variant_data = {assay: 0.0 for assay in score_assays}
                 variant_data ["_id"] = variant_id
+                variant_data_list.append(variant_data)
         
         with open('variant_alphagenome_object.pkl', 'wb') as file:
-            pickle.dump(variant_data, file)
+            pickle.dump(variant_data_list, file)
             
-        print(variant_data)
-        return variant_data
+        print(variant_data_list)
+        return variant_data_list
             
 
 
@@ -673,7 +675,7 @@ class Evo2Agent:
         evo2_results = {}
 
         variant_data = []
-        for record in coordinates[0:2]:  # Limit to first 10 for testing
+        for record in coordinates[0:3]:  # Limit to first 10 for testing
             chrom = record["chrom"]
             coordinates = record["pos"]
             ref = record["ref"]
