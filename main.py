@@ -34,6 +34,7 @@ import config
 import utils
 import argparse
 import os
+import json
 
 # Argument parser for topic input
 parser = argparse.ArgumentParser(description="Carry out variant prioritization from VCF.")
@@ -118,7 +119,8 @@ def main(file_path=None, phenotype=None, conda_env=None, use_cli_args=True):
     if phenotype_term is None:
         raise ValueError("A phenotype must be provided via argument or function call.")
     orchestrator_agent.coordinate(vcf_file, phenotype_term)
-    return rank_variants(Path("./data/aggregated_variants_object.pkl"))
+    result = rank_variants(Path("./data/aggregated_variants_object.pkl"))
+    return json.dumps(result["parsed_rankings"], indent=2) if result["parsed_rankings"] else result["raw_response"]
 
 if __name__ == "__main__":
     main()
