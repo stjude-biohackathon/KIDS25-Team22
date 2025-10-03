@@ -10,7 +10,7 @@ import requests
 import xml.etree.ElementTree as ET
 import argparse
 import json
-from bs4 import BeautifulSoup
+#from bs4 import BeautifulSoup
 from pdb import set_trace
 import json
 
@@ -263,7 +263,7 @@ class VariantGetterBioMCPAgent:
                     'clinvar_data': None 
                 })
         #set_trace()    
-        with open('variant_literature_object.pkl', 'wb') as file:
+        with open('./data/variant_literature_object.pkl', 'wb') as file:
             pickle.dump(variant_data_list, file)
         return variant_data_list
       
@@ -563,7 +563,7 @@ class AlphaGenomeAgent:
                 variant_data ["_id"] = variant_id
                 variant_data_list.append(variant_data)
         
-        with open('variant_alphagenome_object.pkl', 'wb') as file:
+        with open('./data/variant_alphagenome_object.pkl', 'wb') as file:
             pickle.dump(variant_data_list, file)
             
         print(variant_data_list)
@@ -730,7 +730,7 @@ class Evo2Agent:
             #variant_data[variant_id] = float(varScore-refScore)
             print(variant_data)
         
-        with open('variant_evo2_object.pkl', 'wb') as file:
+        with open('./data/variant_evo2_object.pkl', 'wb') as file:
             pickle.dump(variant_data, file)
 
         return variant_data
@@ -802,7 +802,9 @@ class VariantAggregationAgent:
 
         self.latest_results = aggregated
         with open('./data/aggregated_variants_object.pkl', 'wb') as file:
-            aggList = [aggregated["VariantGetterBioMCPAgent"], aggregated["AlphaGenomeAgent"], aggregated["Evo2Agent"]]
+            aggList = []
+            for key in aggregated:
+                aggList.append(aggregated[key])
             pickle.dump(aggList, file)
         
         return aggregated
