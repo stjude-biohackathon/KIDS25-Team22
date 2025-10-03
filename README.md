@@ -26,6 +26,7 @@ This project is intended for research and experimentation. It relies on a number
 - A conda environment is recommended. The project contains a pinned `requirements.txt` with many heavy packages (Torch, Transformers, scientific stack).
 - The following environment variables and API keys should be available as environment variables - `ALPGENOME_API_KEY`, `PCAI_EVO2_ENDPOINT`, `PCAI_EVO2_TOKEN`
 - Ollama should be serving and have appropriate models available as mentioned in the `config.py`
+- Currently EVO2 is running on St. Jude's internal network as specified in `agents.runEvo2()`. 
 
 
 ## Suggested setup
@@ -78,7 +79,7 @@ Open http://localhost:5001 in your browser. The UI supports uploading `.vcf` / `
 ## Notes, caveats, and suggestions
 
 - The codebase references local model servers and services (comments in `main.py` mention Ollama and model endpoints). Ensure any required external services or credentials are available before running those parts.
-- Several large pickled artifacts live in the repo root (e.g., `variant_*_object.pkl`). These are data artifacts used by agents.
+- Pickled artifacts live in the `./data` (e.g., `aggregated_variants_object.pkl`). These are data artifacts used by agents.
 - This README is a concise starting guide. I can expand it with development notes, testing instructions, architecture diagrams, or example outputs on request.
 
 ## License
